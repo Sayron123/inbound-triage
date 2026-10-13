@@ -49,3 +49,4 @@ The expected database record is a `messages` row containing `id`, `name`, `email
 - The Supabase service role key is backend only, never in /frontend.
 - Keep it simple. Don't add libraries or abstractions the brief doesn't need.
 - Explain security-relevant choices briefly (auth, RLS, secrets).
+
