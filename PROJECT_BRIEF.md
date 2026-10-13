@@ -1,11 +1,11 @@
 # inbound-triage: project brief
 
 ## Goal
-Build a small, live project that gives me real answers for a job application (OnlineJobs.ph, "AI Automation Developer - Claude Code, Python, Next.js, Supabase"). The application asks for:
+Build a small, live project that gives me real answers for a job application (OnlineJobs.ph, "AI Automation Developer - Copilot, Python, Next.js, Supabase"). The application asks for:
 1. Something I built in Python or TypeScript that is running today (what it does, what it connects to, where it's hosted)
 2. One API or webhook integration (what talked to what, one problem, how I fixed it)
 3. One real workflow using an LLM API (not a chat window)
-4. One specific time Claude Code produced something wrong or overbuilt, how I caught it, what I did
+4. One specific time Copilot produced something wrong or overbuilt, how I caught it, what I did
 5. Monthly rate in USD, overlap with 9am-5pm US Eastern, earliest start date
 Subject line must be exactly: FLEET BUILDER - [Your Name]. Answer only the 5 questions.
 
@@ -16,7 +16,7 @@ Webhook receives a message -> FastAPI service -> LLM classifies and summarizes -
 - Backend: Python 3.11+, FastAPI, Docker, hosted on Render (free tier; no Google Cloud because no card)
 - Database: Supabase (Postgres, RLS on, service role key only in backend)
 - Frontend: Next.js (TypeScript) in /frontend, hosted on Vercel Hobby
-- LLM: Claude API or OpenRouter
+- LLM: Gemini or OpenRouter
 - Alerts: Slack or Discord webhook
 - Tests: pytest for the backend
 
@@ -64,11 +64,11 @@ Service role key, Anthropic/OpenRouter key, webhook secret, Slack/Discord URL.
 - A test POST triggers the full flow and shows on the dashboard
 - Backend live on Render, dashboard live on Vercel
 - No secrets in git
-- CLAUDE_LOG.md has at least one real, specific Claude Code mistake
+- AI_LOG.md has at least one real, specific Copilot  mistake
 
 ## Job notes to confirm before answering Q5
 - Role needs 4+ hours overlap with 9am-5pm US Eastern (about 9pm-5am PH time; one hour later after Nov 1)
 - Post lists pay as "8-15" with no unit; probably USD per hour, confirm
 
 ## Progress
-(Update this section as I finish each step.)
+(Update this section as I finish each step.) 
