@@ -39,14 +39,13 @@ async def webhook(
             status_code=401,
             detail="Invalid webhook secret",
         )
-
+    discord_url = os.getenv("DISCORD_WEBHOOK_URL")
     url: str = os.environ.get("SUPABASE_URL")
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
     async with httpx.AsyncClient() as client: 
         r  = await client.post(
             url="https://openrouter.ai/api/v1/chat/completions",
-            
             headers={
                 "Authorization": "Bearer " + api_key,          
             },
@@ -65,7 +64,7 @@ async def webhook(
                     {
                         "role" : "user",
                         "content": body.text 
-                    }
+                    },
                 ]
             })
         )
@@ -89,6 +88,15 @@ async def webhook(
             "urgency": urgency,
             "summary": summary
         }).execute()
+
+        if urgency == "high":
+            discord_response = await client.post(
+                discord_url,
+                json={
+                    "content": f"High urgency message from {body.name}: {summary}"
+                }
+            )
+            discord_response.raise_for_status()
     return {
         "received": True,
         "has_secret": webhook_secret is not None
