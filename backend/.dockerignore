@@ -1,0 +1,25 @@
+
+# Secrets and local environment files
+.env
+.env.*
+*.env
+
+# Python virtual environments and cache
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local test and tooling files
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Git and editor files
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Logs
+*.log
