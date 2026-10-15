@@ -6,14 +6,34 @@ from fastapi import FastAPI ,Header , HTTPException
 from pydantic import BaseModel
 from typing import Annotated
 from supabase import create_client, Client
+from typing import Literal
 
 app = FastAPI()
 load_dotenv()
 
+Category = Literal[
+    "billing",
+    "technical",
+    "sales",
+    "support",
+    "other",
+]
+
+Urgency = Literal[
+    "low",
+    "medium",
+    "high"
+]
 class Messages(BaseModel):
     name: str
     email: str
     text: str 
+
+class Classification(BaseModel):
+    category: Category
+    urgency: Urgency
+    summary: str
+
 
 @app.get("/health")
 def health():
@@ -59,7 +79,9 @@ async def webhook(
                             "fields: category, urgency, summary. "
                             "urgency must be low, medium, or high. "
                             "summary must be one concise sentence."
-                        )
+                            "The category must be exactly one of: billing, technical, sales, support, other"
+                           
+                        ) 
                     },
                     {
                         "role" : "user",
@@ -72,13 +94,11 @@ async def webhook(
         response_data = r.json()
         ai_content = response_data["choices"][0]["message"]["content"]
 
-        classification = json.loads(ai_content)
+        classification = Classification.model_validate_json(ai_content)
 
-        category = classification["category"]
-        urgency  = classification["urgency"]
-        summary  = classification["summary"]
-
-        print(classification)
+        category = classification.category
+        urgency  = classification.urgency
+        summary  = classification.summary
 
         supabase.table("messages").insert({
             "name": body.name,

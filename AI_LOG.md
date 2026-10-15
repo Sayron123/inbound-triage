@@ -1,4 +1,4 @@
-# Claude Code log (for Q4)
+# COPILOT (for Q4)
 
 For each mistake, write: what it produced, how I caught it, what I changed.
 
