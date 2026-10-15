@@ -63,38 +63,41 @@ async def webhook(
     url: str = os.environ.get("SUPABASE_URL")
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
-    async with httpx.AsyncClient() as client: 
-        r  = await client.post(
-            url="https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": "Bearer " + api_key,          
-            },
-            json=({
-                "model": m,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Classify the inbound message. Return only valid JSON with these "
-                            "fields: category, urgency, summary. "
-                            "urgency must be low, medium, or high. "
-                            "summary must be one concise sentence."
-                            "The category must be exactly one of: billing, technical, sales, support, other"
-                           
-                        ) 
-                    },
-                    {
-                        "role" : "user",
-                        "content": body.text 
-                    },
-                ]
-            })
-        )
-        r.raise_for_status()
-        response_data = r.json()
-        ai_content = response_data["choices"][0]["message"]["content"]
+    async with httpx.AsyncClient() as client:
+        try:
+            r  = await client.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": "Bearer " + api_key,          
+                },
+                json=({
+                    "model": m,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                "Classify the inbound message. Return only valid JSON with these "
+                                "fields: category, urgency, summary. "
+                                "urgency must be low, medium, or high. "
+                                "summary must be one concise sentence."
+                                "The category must be exactly one of: billing, technical, sales, support, other"
+                            
+                            ) 
+                        },
+                        {
+                            "role" : "user",
+                            "content": body.text 
+                        },
+                    ]
+                })
+            )
+            r.raise_for_status()
+            response_data = r.json()
+            ai_content = response_data["choices"][0]["message"]["content"]
 
-        classification = Classification.model_validate_json(ai_content)
+            classification = Classification.model_validate_json(ai_content)
+        except (httpx.HTTPError, KeyError, ValueError):
+            raise HTTPException(status_code=502, detail="Classification failed")
 
         category = classification.category
         urgency  = classification.urgency
