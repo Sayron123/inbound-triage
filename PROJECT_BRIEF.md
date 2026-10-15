@@ -23,11 +23,12 @@ Webhook receives a message -> FastAPI service -> LLM classifies and summarizes -
 ## Repo layout
 /backend
 /frontend
-.env.example (no real secrets)
-.gitignore (excludes .env)
-README.md (architecture diagram, setup steps, screenshots)
-RUNBOOK.md (deploy steps, what to check when it breaks, key rotation)
-CLAUDE_LOG.md (Q4 notes)
+backend/Dockerfile
+backend/.dockerignore
+backend/requirements.txt
+.gitignore (excludes secrets and generated files)
+README.md (architecture, setup, deployment, and test steps)
+AI_LOG.md (Q4 notes)
 
 ## Backend requirements
 - POST /webhook accepts name, email, text
@@ -71,4 +72,9 @@ Service role key, Anthropic/OpenRouter key, webhook secret, Slack/Discord URL.
 - Post lists pay as "8-15" with no unit; probably USD per hour, confirm
 
 ## Progress
-(Update this section as I finish each step.) 
+- Backend webhook implemented in `backend/main.py` with `GET /health` and authenticated `POST /webhook`.
+- OpenRouter classification, Supabase persistence, and high-urgency Discord alerts were tested locally.
+- Supabase Auth dashboard implemented in `frontend/` with category and urgency filters, message details, and light/dark system theme support.
+- Backend Docker deployment files added and deployed to Render; `/health` and production webhook were verified.
+- Frontend deployed to Vercel; login, message list, filters, detail view, and logout were verified.
+- Remaining: complete the concrete entry in `AI_LOG.md`, add backend pytest coverage, and keep deployment URLs/secrets documented only in the appropriate private configuration.
