@@ -42,6 +42,9 @@ function MessageDetailContent() {
         return;
       }
 
+      // The detail page reads the row written by the backend webhook.
+      // RLS still applies to this single-row query; the frontend never uses
+      // the backend service-role key to bypass Supabase permissions.
       const { data, error: queryError } = await supabase
         .from("messages")
         .select("id, name, email, text, category, urgency, summary, created_at")

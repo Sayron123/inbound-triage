@@ -81,7 +81,6 @@ async def webhook(
                                 "urgency must be low, medium, or high. "
                                 "summary must be one concise sentence."
                                 "The category must be exactly one of: billing, technical, sales, support, other"
-                            
                             ) 
                         },
                         {
@@ -119,7 +118,7 @@ async def webhook(
                     "content": f"High urgency message from {body.name}: {summary}"
                 }
             )
-            discord_response.raise_for_status()
+        discord_response.raise_for_status()
     return {
         "received": True,
         "has_secret": webhook_secret is not None

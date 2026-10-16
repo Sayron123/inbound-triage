@@ -58,16 +58,18 @@ function LoginForm() {
     event.preventDefault();
     setIsSubmitting(true);
     setError("");
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
+      if (signInError) setError(signInError.message);
+    } catch {
+      setError("Something went wrong. Try again.")
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -124,6 +126,7 @@ export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const [category, setCategory] = useState("all");
   const [urgency, setUrgency] = useState("all");
   const [error, setError] = useState("");
@@ -133,19 +136,17 @@ export default function Home() {
     let isMounted = true;
 
     async function loadSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (isMounted) {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+      try{
+        const { data: { session } } = await supabase.auth.getSession();
+        if(isMounted)setUser(session?.user ?? null);
+      } finally {
+          if(isMounted)setIsLoading(false);
+        }
       }
-    }
+    
 
     loadSession();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription }} = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
@@ -157,26 +158,33 @@ export default function Home() {
 
   useEffect(() => {
     if (!user) {
+      setMessages([]);
       return;
     }
 
+    let ignore = false; // prevents a stale response from overwriting newer State 
+
     async function loadMessages() {
+      setIsFetching(true);
       setError("");
-      // SECURITY CHECK: this uses the browser anon key and the authenticated session.
-      // Keep the service-role key and all backend secrets out of this component.
+      // This is the frontend's database connection. The authenticated session
+      // is sent by Supabase automatically, so the database RLS policy decides
+      // whether this user may read the messages table.
       const { data, error: queryError } = await supabase
         .from("messages")
         .select("id, name, email, text, category, urgency, summary, created_at")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }); //sort largest to smallest , newest first 
 
-      if (queryError) {
-        setError(queryError.message);
-        return;
-      }
-      setMessages((data ?? []) as Message[]);
+      if (ignore) return; 
+      if (queryError) setError(queryError.message);
+      else setMessages((data ?? []) as Message[]);
+      setIsFetching(false);
     }
 
     loadMessages();
+
+    return () => 
+    { ignore = true; };
   }, [supabase, user]);
 
   async function handleLogout() {

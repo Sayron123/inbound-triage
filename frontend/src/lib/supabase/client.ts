@@ -15,5 +15,8 @@ export const createClient = () => {
     return createBrowserClient("http://localhost", "build-placeholder");
   }
 
+  // The frontend intentionally uses only the public anon key. Supabase Auth
+  // and RLS enforce which logged-in users can read messages; the service-role
+  // key remains server-side in the backend.
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
 };
