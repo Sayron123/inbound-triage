@@ -1,14 +1,17 @@
 # inbound-triage
 
-Inbound message triage pipeline built with FastAPI, OpenRouter, Supabase, Discord, and Next.js.
+Inbound message triage pipeline built with FastAPI, OpenRouter, Supabase, Discord, and Next.js. Messages arrive from a webhook or from Gmail, are classified by an LLM, saved, and shown on a dashboard.
 
 ## What it does
 
 ```text
-External sender
-    |
-    | POST /webhook + X-Webhook-Secret
-    v
+External sender                    Gmail (triage address)
+    |                                  |
+    |                                  | Google Apps Script, every 10 minutes
+    |                                  | adds "source": "gmail"
+    | POST /webhook + X-Webhook-Secret |
+    +----------------+-----------------+
+                     v
 FastAPI backend on Render
     |
     | classify and summarize
@@ -24,7 +27,7 @@ Supabase messages table
 Next.js dashboard on Vercel
 ```
 
-High-urgency messages also trigger a Discord webhook after the Supabase insert succeeds.
+High-urgency messages also trigger a Discord webhook after the Supabase insert succeeds. If Discord fails, the failure is logged and the request still succeeds, because the message is already saved. Discord mentions are disabled in alerts, since the text comes from outside senders.
 
 ## Repository layout
 
@@ -33,7 +36,7 @@ High-urgency messages also trigger a Discord webhook after the Supabase insert s
 - `apps-script/` - Google Apps Script that forwards triage emails from Gmail to `/webhook`
 - `supabase/` - SQL migrations, run by hand in the Supabase SQL Editor
 - `PROJECT_BRIEF.md` - scope and definition of done
-- `AI_LOG.md` - concrete Copilot mistake log
+- `AI_LOG.md` - log of mistakes made by AI coding tools (Copilot and Claude Code)
 
 ## Backend setup
 
