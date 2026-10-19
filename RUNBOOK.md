@@ -72,17 +72,18 @@ Gmail emails reach the backend through a Google Apps Script in the test Gmail ac
 ### One-time setup
 
 1. Run `supabase/add_message_source.sql` in the Supabase SQL Editor. Do this before deploying the new backend or frontend, because both now use the `source` column.
-2. Go to script.google.com, create a project, and paste in `apps-script/Code.gs`.
-3. In Project Settings > Script properties, add these three names (values are never committed):
+2. Go to script.google.com, create a project, and paste in `apps-script/Code.gs`. Replace `YOUR_TRIAGE_ADDRESS` with the plus-address that receives emails to triage. If the Render URL differs, change `WEBHOOK_URL` at the top of the file.
+3. In Project Settings > Script properties, add one property (the value is never committed):
 
 ```text
-WEBHOOK_URL      full /webhook URL of the Render service
 WEBHOOK_SECRET   same value as WEBHOOK_SECRET on Render
-TRIAGE_ADDRESS   the plus-address that receives emails to triage
 ```
 
-4. Run `processTriageEmails` once by hand and approve the Gmail and external-request permissions.
-5. Add a time-driven trigger for `processTriageEmails`, every 10 or 15 minutes.
+4. Run `sendNewEmailsToTriage` once by hand and approve the Gmail and external-request permissions.
+5. Send a test email with a real subject and body to the triage address, run the function again, and confirm a row with the Gmail badge appears on the dashboard.
+6. Add a time-driven trigger for `sendNewEmailsToTriage`, every 10 or 15 minutes.
+
+How it behaves: each run looks at emails from the last day (`newer_than:1d`), at most 20 threads, and sends the newest message of each thread. An email that keeps failing for more than a day is no longer retried. The Executions page shows `Completed` even when the backend rejected an email, because failures are only logged. Open a run and read its log.
 
 ### Rotating the secret
 
@@ -211,12 +212,12 @@ Confirm that the classifier returned `high`, `DISCORD_WEBHOOK_URL` is configured
 
 Open the Apps Script project > Executions and read the log of the latest run.
 
-- `Missing script property`: one of `WEBHOOK_URL`, `WEBHOOK_SECRET`, `TRIAGE_ADDRESS` is not set.
-- `Backend unavailable`: the Render service was asleep or down. Unlabeled emails retry on the next run.
-- `rejected ... status 401`: `WEBHOOK_SECRET` in Script properties does not match Render.
-- `rejected ... status 422`: the payload was invalid for that one email; it stays unlabeled and is skipped each run until fixed or labeled by hand.
-- Nothing logged and no emails found: check that the email was really sent to `TRIAGE_ADDRESS` and does not already have the `triaged` label.
-- Only the first message of a thread is sent; replies inside an already-labeled thread are not triaged.
+- `Failed: 401`: `WEBHOOK_SECRET` in Script properties is missing or does not match Render.
+- `Failed: 422`: the payload was invalid for that one email. It stays unlabeled and is retried until it is a day old.
+- `Failed: 500` or `502`: the backend had a problem. Check the Render logs. `502` means the classification (OpenRouter) failed.
+- A slow run or `Failed: 5xx` right after a quiet period: the Render free tier was asleep. The email stays unlabeled and retries on the next run.
+- Nothing logged and no new rows: check that the email was really sent to the triage address, is less than a day old, and does not already have the `triaged` label.
+- Only the newest message of a thread is sent, and the label is put on the whole thread, so replies in an already-labeled thread are not triaged.
 
 ### The frontend cannot find Supabase variables locally
 
