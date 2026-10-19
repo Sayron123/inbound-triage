@@ -42,11 +42,11 @@ High-urgency messages also trigger a Discord webhook after the Supabase insert s
 
 Requirements: Python 3.11+.
 
-Create and activate a virtual environment, then install dependencies:
+From the repository root, create and activate a virtual environment, then install dependencies. If PowerShell blocks the activation script, run `Set-ExecutionPolicy -Scope Process RemoteSigned` first:
 
 ```powershell
-py -3.11 -m venv backend\.venv
-backend\.venv\Scripts\Activate.ps1
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
 python -m pip install -r backend\requirements.txt
 ```
 
@@ -79,6 +79,16 @@ Expected response:
 {"status":"ok"}
 ```
 
+## Backend tests
+
+From the `backend` folder:
+
+```powershell
+python -m pytest
+```
+
+The tests use fake Supabase, OpenRouter, and Discord clients, so they need no real keys and make no network calls.
+
 ## Webhook test
 
 The webhook accepts only `POST` requests. Use Postman or PowerShell:
@@ -98,11 +108,13 @@ Invoke-RestMethod `
   -Body $body
 ```
 
+The body also accepts an optional `source` field, either `webhook` or `gmail`. It defaults to `webhook`, so requests without it keep working.
+
 The same request can target the deployed Render URL. `/health` supports `GET`; `/webhook` requires `POST`.
 
 ## Gmail source
 
-Emails sent to the triage address reach the backend through a Google Apps Script, not through the Gmail API. The script (`apps-script/Code.gs`) runs on a time trigger, POSTs each new email to `/webhook` with `"source": "gmail"`, and then labels the thread `triaged` so it is not sent again. The backend has no Gmail code. Setup steps are in `RUNBOOK.md`.
+Emails sent to the triage address reach the backend through a Google Apps Script, not through the Gmail API. The script (`apps-script/Code.gs`) runs on a time trigger, POSTs each new email to `/webhook` with `"source": "gmail"`, and then labels the thread `triaged` so it is not sent again. The backend has no Gmail code. The webhook secret is kept in the script's Script Properties, never in the code. Setup steps and troubleshooting are in `RUNBOOK.md`.
 
 ## Frontend setup
 
@@ -134,6 +146,8 @@ Available frontend checks:
 npm run lint
 npm run build
 ```
+
+The dashboard lists messages with filters for category, urgency, and source (webhook or gmail), and a detail page per message.
 
 Create the user for local login in Supabase Authentication, then sign in through the dashboard. The dashboard reads `messages` with the anon key and the authenticated session; RLS must remain enabled.
 
@@ -195,4 +209,4 @@ Keep Row Level Security enabled. Authenticated users may read messages through t
 
 The local webhook flow was tested with Postman. The deployed Render health endpoint and production webhook were also verified, and the Vercel dashboard was tested for login, message listing, filtering, detail view, and logout.
 
-Remaining project work is to add backend pytest coverage and complete the concrete Copilot mistake entry in `AI_LOG.md`.
+The Gmail source was tested end to end on the deployed services: test emails reached the dashboard with the Gmail badge, urgent ones sent a Discord alert without pinging anyone, and an instruction hidden in an email did not change the classification. The backend has pytest coverage for authentication, payload validation, the `source` field, and Discord alert handling.
