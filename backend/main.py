@@ -1,5 +1,6 @@
 import hmac
 import httpx
+import logging
 import os ,json
 from dotenv import load_dotenv
 from fastapi import FastAPI ,Header , HTTPException
@@ -10,6 +11,7 @@ from typing import Literal
 
 app = FastAPI()
 load_dotenv()
+logger = logging.getLogger("inbound-triage")
 
 Category = Literal[
     "billing",
@@ -24,10 +26,16 @@ Urgency = Literal[
     "medium",
     "high"
 ]
+Source = Literal[
+    "webhook",
+    "gmail",
+]
+
 class Messages(BaseModel):
     name: str
     email: str
-    text: str 
+    text: str
+    source: Source = "webhook"  # optional, so existing callers (Postman) keep working
 
 class Classification(BaseModel):
     category: Category
@@ -108,17 +116,25 @@ async def webhook(
             "text": body.text,
             "category": category,
             "urgency": urgency,
-            "summary": summary
+            "summary": summary,
+            "source": body.source,
         }).execute()
 
-        if urgency == "high":
-            discord_response = await client.post(
-                discord_url,
-                json={
-                    "content": f"High urgency message from {body.name}: {summary}"
-                }
-            )
-        discord_response.raise_for_status()
+        # The message is already saved, so a Discord failure must not fail the
+        # request. Returning an error would make the sender retry and duplicate the row.
+        if urgency == "high" and discord_url:
+            try:
+                discord_response = await client.post(
+                    discord_url,
+                    json={
+                        "content": f"High urgency message from {body.name}: {summary}",
+                        # name and summary come from outside senders; never let them ping anyone
+                        "allowed_mentions": {"parse": []},
+                    }
+                )
+                discord_response.raise_for_status()
+            except httpx.HTTPError:
+                logger.warning("Discord alert failed")
     return {
         "received": True,
         "has_secret": webhook_secret is not None

@@ -13,6 +13,7 @@ type Message = {
   category: string;
   urgency: "high" | "medium" | "low";
   summary: string;
+  source: string;
   created_at: string;
 };
 
@@ -47,7 +48,7 @@ function MessageDetailContent() {
       // the backend service-role key to bypass Supabase permissions.
       const { data, error: queryError } = await supabase
         .from("messages")
-        .select("id, name, email, text, category, urgency, summary, created_at")
+        .select("id, name, email, text, category, urgency, summary, source, created_at")
         .eq("id", params.id)
         .single();
 
@@ -104,6 +105,12 @@ function MessageDetailContent() {
                   Category
                 </dt>
                 <dd className="mt-2 capitalize">{message.category}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase text-[#6B7280] dark:text-[#94A3B8]">
+                  Source
+                </dt>
+                <dd className="mt-2 capitalize">{message.source}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase text-[#6B7280] dark:text-[#94A3B8]">

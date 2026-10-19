@@ -30,6 +30,8 @@ High-urgency messages also trigger a Discord webhook after the Supabase insert s
 
 - `backend/` - FastAPI service, Dockerfile, and Python dependencies
 - `frontend/` - Next.js TypeScript dashboard
+- `apps-script/` - Google Apps Script that forwards triage emails from Gmail to `/webhook`
+- `supabase/` - SQL migrations, run by hand in the Supabase SQL Editor
 - `PROJECT_BRIEF.md` - scope and definition of done
 - `AI_LOG.md` - concrete Copilot mistake log
 
@@ -94,6 +96,10 @@ Invoke-RestMethod `
 ```
 
 The same request can target the deployed Render URL. `/health` supports `GET`; `/webhook` requires `POST`.
+
+## Gmail source
+
+Emails sent to the triage address reach the backend through a Google Apps Script, not through the Gmail API. The script (`apps-script/Code.gs`) runs on a time trigger, POSTs each new email to `/webhook` with `"source": "gmail"`, and then labels the thread `triaged` so it is not sent again. The backend has no Gmail code. Setup steps are in `RUNBOOK.md`.
 
 ## Frontend setup
 
@@ -175,8 +181,10 @@ Never put the Supabase service-role key, OpenRouter key, webhook secret, or Disc
 The `messages` table contains:
 
 ```text
-id, name, email, text, category, urgency, summary, created_at
+id, name, email, text, category, urgency, summary, source, created_at
 ```
+
+`source` is `webhook` or `gmail` and defaults to `webhook`. Add it to an existing table with `supabase/add_message_source.sql`.
 
 Keep Row Level Security enabled. Authenticated users may read messages through the frontend; the backend uses its server-side key for inserts.
 

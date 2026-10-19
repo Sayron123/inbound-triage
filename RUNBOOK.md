@@ -65,6 +65,29 @@ The frontend uses the anon key with the authenticated Supabase session. Keep Row
 
 Backend values belong in `backend\.env`. Frontend values belong in `frontend\.env.local`. Both files are ignored by Git and must stay local.
 
+## Gmail source (Apps Script)
+
+Gmail emails reach the backend through a Google Apps Script in the test Gmail account. The backend is unchanged except for the optional `source` field on `/webhook`.
+
+### One-time setup
+
+1. Run `supabase/add_message_source.sql` in the Supabase SQL Editor. Do this before deploying the new backend or frontend, because both now use the `source` column.
+2. Go to script.google.com, create a project, and paste in `apps-script/Code.gs`.
+3. In Project Settings > Script properties, add these three names (values are never committed):
+
+```text
+WEBHOOK_URL      full /webhook URL of the Render service
+WEBHOOK_SECRET   same value as WEBHOOK_SECRET on Render
+TRIAGE_ADDRESS   the plus-address that receives emails to triage
+```
+
+4. Run `processTriageEmails` once by hand and approve the Gmail and external-request permissions.
+5. Add a time-driven trigger for `processTriageEmails`, every 10 or 15 minutes.
+
+### Rotating the secret
+
+When `WEBHOOK_SECRET` changes on Render, update it in the Apps Script Script properties as well.
+
 ## Deploying the backend
 
 1. Push the backend deployment files and code to the repository:
@@ -182,7 +205,18 @@ Check the selected category and urgency filters, then clear them. If the table i
 
 ### High-urgency messages do not alert Discord
 
-Confirm that the classifier returned `high`, `DISCORD_WEBHOOK_URL` is configured in Render, and the Discord webhook is still active. The alert is attempted after the Supabase insert.
+Confirm that the classifier returned `high`, `DISCORD_WEBHOOK_URL` is configured in Render, and the Discord webhook is still active. The alert is attempted after the Supabase insert. A failed alert is logged as `Discord alert failed` in the Render logs and does not fail the request, because the message is already saved.
+
+### Gmail emails are not showing up on the dashboard
+
+Open the Apps Script project > Executions and read the log of the latest run.
+
+- `Missing script property`: one of `WEBHOOK_URL`, `WEBHOOK_SECRET`, `TRIAGE_ADDRESS` is not set.
+- `Backend unavailable`: the Render service was asleep or down. Unlabeled emails retry on the next run.
+- `rejected ... status 401`: `WEBHOOK_SECRET` in Script properties does not match Render.
+- `rejected ... status 422`: the payload was invalid for that one email; it stays unlabeled and is skipped each run until fixed or labeled by hand.
+- Nothing logged and no emails found: check that the email was really sent to `TRIAGE_ADDRESS` and does not already have the `triaged` label.
+- Only the first message of a thread is sent; replies inside an already-labeled thread are not triaged.
 
 ### The frontend cannot find Supabase variables locally
 

@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   CATEGORY_BADGE_COLORS,
   CATEGORY_OPTIONS,
+  SOURCE_BADGE_COLORS,
+  SOURCE_OPTIONS,
 } from "@/lib/constants";
 
 type Message = {
@@ -18,6 +20,7 @@ type Message = {
   category: string;
   urgency: "high" | "medium" | "low";
   summary: string;
+  source: string;
   created_at: string;
 };
 
@@ -43,6 +46,16 @@ function CategoryBadge({ category }: { category: string }) {
       className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${CATEGORY_BADGE_COLORS[category] ?? CATEGORY_BADGE_COLORS.other}`}
     >
       {category}
+    </span>
+  );
+}
+
+function SourceBadge({ source }: { source: string }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${SOURCE_BADGE_COLORS[source] ?? SOURCE_BADGE_COLORS.webhook}`}
+    >
+      {source}
     </span>
   );
 }
@@ -129,6 +142,7 @@ export default function Home() {
   const [isFetching, setIsFetching] = useState(false);
   const [category, setCategory] = useState("all");
   const [urgency, setUrgency] = useState("all");
+  const [source, setSource] = useState("all");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -172,7 +186,7 @@ export default function Home() {
       // whether this user may read the messages table.
       const { data, error: queryError } = await supabase
         .from("messages")
-        .select("id, name, email, text, category, urgency, summary, created_at")
+        .select("id, name, email, text, category, urgency, summary, source, created_at")
         .order("created_at", { ascending: false }); //sort largest to smallest , newest first 
 
       if (ignore) return; 
@@ -194,7 +208,8 @@ export default function Home() {
   const filteredMessages = messages.filter(
     (message) =>
       (category === "all" || message.category === category) &&
-      (urgency === "all" || message.urgency === urgency),
+      (urgency === "all" || message.urgency === urgency) &&
+      (source === "all" || message.source === source),
   );
 
   if (isLoading) {
@@ -261,11 +276,27 @@ export default function Home() {
               <option value="low">Low</option>
             </select>
           </label>
+          <label className="flex flex-col gap-2 font-medium">
+            Source
+            <select
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              className="rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-normal outline-none focus:border-[#2563EB] dark:border-[#1E293B] dark:bg-[#111827] dark:focus:border-[#38BDF8]"
+            >
+              <option value="all">All sources</option>
+              {SOURCE_OPTIONS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => {
               setCategory("all");
               setUrgency("all");
+              setSource("all");
             }}
             className="rounded-md border border-[#E5E7EB] px-4 py-2 font-medium hover:bg-[#F3F4F6] dark:border-[#1E293B] dark:hover:bg-[#1E293B]"
           >
@@ -287,6 +318,7 @@ export default function Home() {
                 <th className="px-4 py-3 font-semibold">Summary</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
                 <th className="px-4 py-3 font-semibold">Urgency</th>
+                <th className="px-4 py-3 font-semibold">Source</th>
                 <th className="px-4 py-3 font-semibold">Created</th>
               </tr>
             </thead>
@@ -319,6 +351,9 @@ export default function Home() {
                   </td>
                   <td className="px-4 py-3">
                     <UrgencyBadge urgency={message.urgency} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <SourceBadge source={message.source} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-[#6B7280] dark:text-[#94A3B8]">
                     {new Date(message.created_at).toLocaleDateString()}
