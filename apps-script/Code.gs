@@ -23,6 +23,7 @@ function sendNewEmailsToTriage() {
       email: match ? match[2] : from,
       text: msg.getSubject() + '\n\n' + msg.getPlainBody().slice(0, 4000),
       source: 'gmail',
+      external_id: msg.getId(), // backend skips an id it has already saved
     };
 
     const res = UrlFetchApp.fetch(WEBHOOK_URL, {

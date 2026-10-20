@@ -67,11 +67,11 @@ Backend values belong in `backend\.env`. Frontend values belong in `frontend\.en
 
 ## Gmail source (Apps Script)
 
-Gmail emails reach the backend through a Google Apps Script in the test Gmail account. The backend is unchanged except for the optional `source` field on `/webhook`.
+Gmail emails reach the backend through a Google Apps Script in the test Gmail account. The backend is unchanged except for the optional `source` and `external_id` fields on `/webhook`.
 
 ### One-time setup
 
-1. Run `supabase/add_message_source.sql` in the Supabase SQL Editor. Do this before deploying the new backend or frontend, because both now use the `source` column.
+1. Run `supabase/add_message_source.sql` and then `supabase/add_message_external_id.sql` in the Supabase SQL Editor. Do this before deploying the backend or frontend, because they use the `source` and `external_id` columns.
 2. Go to script.google.com, create a project, and paste in `apps-script/Code.gs`. Replace `YOUR_TRIAGE_ADDRESS` with the plus-address that receives emails to triage. If the Render URL differs, change `WEBHOOK_URL` at the top of the file.
 3. In Project Settings > Script properties, add one property (the value is never committed):
 
@@ -83,7 +83,7 @@ WEBHOOK_SECRET   same value as WEBHOOK_SECRET on Render
 5. Send a test email with a real subject and body to the triage address, run the function again, and confirm a row with the Gmail badge appears on the dashboard.
 6. Add a time-driven trigger for `sendNewEmailsToTriage`, every 10 or 15 minutes.
 
-How it behaves: each run looks at emails from the last day (`newer_than:1d`), at most 20 threads, and sends the newest message of each thread. An email that keeps failing for more than a day is no longer retried. The Executions page shows `Completed` even when the backend rejected an email, because failures are only logged. Open a run and read its log.
+How it behaves: each run looks at emails from the last day (`newer_than:1d`), at most 20 threads, and sends the newest message of each thread. An email that keeps failing for more than a day is no longer retried. Each email is sent with its Gmail message id as `external_id`, so if the backend saved it but the response was lost, the resend gets `200` with `"duplicate": true` and the thread is labeled, without a second row. The Executions page shows `Completed` even when the backend rejected an email, because failures are only logged. Open a run and read its log.
 
 ### Rotating the secret
 

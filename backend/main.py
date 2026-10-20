@@ -4,7 +4,8 @@ import logging
 import os ,json
 from dotenv import load_dotenv
 from fastapi import FastAPI ,Header , HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from postgrest.exceptions import APIError
 from typing import Annotated
 from supabase import create_client, Client
 from typing import Literal
@@ -36,6 +37,15 @@ class Messages(BaseModel):
     email: str
     text: str
     source: Source = "webhook"  # optional, so existing callers (Postman) keep working
+    # Optional sender-side id (e.g. Gmail message id). The same id is never processed twice.
+    external_id: str | None = Field(default=None, min_length=1, max_length=255)
+
+UNIQUE_VIOLATION = "23505"  # Postgres error code for a unique constraint violation
+
+def duplicate_response():
+    """Response for a message whose external_id was already saved. It is a 200 so the
+    sender treats it as delivered and stops retrying."""
+    return {"received": True, "duplicate": True}
 
 class Classification(BaseModel):
     category: Category
@@ -71,6 +81,19 @@ async def webhook(
     url: str = os.environ.get("SUPABASE_URL")
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
+
+    # Check before the LLM call, so a resent message costs no classification.
+    if body.external_id is not None:
+        existing = (
+            supabase.table("messages")
+            .select("id")
+            .eq("external_id", body.external_id)
+            .limit(1)
+            .execute()
+        )
+        if existing.data:
+            return duplicate_response()
+
     async with httpx.AsyncClient() as client:
         try:
             r  = await client.post(
@@ -110,15 +133,23 @@ async def webhook(
         urgency  = classification.urgency
         summary  = classification.summary
 
-        supabase.table("messages").insert({
-            "name": body.name,
-            "email": body.email,
-            "text": body.text,
-            "category": category,
-            "urgency": urgency,
-            "summary": summary,
-            "source": body.source,
-        }).execute()
+        try:
+            supabase.table("messages").insert({
+                "name": body.name,
+                "email": body.email,
+                "text": body.text,
+                "category": category,
+                "urgency": urgency,
+                "summary": summary,
+                "source": body.source,
+                "external_id": body.external_id,
+            }).execute()
+        except APIError as error:
+            # Race: two requests with the same external_id both passed the check above.
+            # The unique constraint let only one insert win; this one is the duplicate.
+            if error.code == UNIQUE_VIOLATION:
+                return duplicate_response()
+            raise
 
         # The message is already saved, so a Discord failure must not fail the
         # request. Returning an error would make the sender retry and duplicate the row.
@@ -137,5 +168,6 @@ async def webhook(
                 logger.warning("Discord alert failed")
     return {
         "received": True,
+        "duplicate": False,
         "has_secret": webhook_secret is not None
     }

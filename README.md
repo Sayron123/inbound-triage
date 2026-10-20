@@ -110,6 +110,8 @@ Invoke-RestMethod `
 
 The body also accepts an optional `source` field, either `webhook` or `gmail`. It defaults to `webhook`, so requests without it keep working.
 
+It also accepts an optional `external_id`, the sender's own id for the message. A message whose `external_id` is already saved is not classified or saved again: the response is still `200`, with `"duplicate": true`.
+
 The same request can target the deployed Render URL. `/health` supports `GET`; `/webhook` requires `POST`.
 
 ## Gmail source
@@ -198,10 +200,12 @@ Never put the Supabase service-role key, OpenRouter key, webhook secret, or Disc
 The `messages` table contains:
 
 ```text
-id, name, email, text, category, urgency, summary, source, created_at
+id, name, email, text, category, urgency, summary, source, external_id, created_at
 ```
 
 `source` is `webhook` or `gmail` and defaults to `webhook`. Add it to an existing table with `supabase/add_message_source.sql`.
+
+`external_id` is optional and unique (many rows may have none). The Gmail script sets it to the Gmail message id. Add it with `supabase/add_message_external_id.sql`.
 
 Keep Row Level Security enabled. Authenticated users may read messages through the frontend; the backend uses its server-side key for inserts.
 
