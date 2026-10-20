@@ -178,6 +178,7 @@ export default function Home() {
     loadSession();
     const { data: { subscription }} = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if(!session) setMessages([]);
     });
 
     return () => {
@@ -188,7 +189,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!user) {
-      setMessages([]);
       return;
     }
 
@@ -301,7 +301,7 @@ export default function Home() {
         )}
 
         <Card className="py-0">
-          <Table className="min-w-180">
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
