@@ -5,12 +5,34 @@ import { useRouter } from "next/navigation";
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { CATEGORY_OPTIONS, SOURCE_OPTIONS } from "@/lib/constants";
+import { CategoryBadge, SourceBadge, UrgencyBadge } from "@/components/badges";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
-  CATEGORY_BADGE_COLORS,
-  CATEGORY_OPTIONS,
-  SOURCE_BADGE_COLORS,
-  SOURCE_OPTIONS,
-} from "@/lib/constants";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Message = {
   id: string;
@@ -24,41 +46,7 @@ type Message = {
   created_at: string;
 };
 
-const urgencyColors = {
-  high: "bg-[#DC2626]",
-  medium: "bg-[#D97706]",
-  low: "bg-[#6B7280]",
-};
-
-function UrgencyBadge({ urgency }: { urgency: Message["urgency"] }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${urgencyColors[urgency]}`}
-    >
-      {urgency}
-    </span>
-  );
-}
-
-function CategoryBadge({ category }: { category: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${CATEGORY_BADGE_COLORS[category] ?? CATEGORY_BADGE_COLORS.other}`}
-    >
-      {category}
-    </span>
-  );
-}
-
-function SourceBadge({ source }: { source: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${SOURCE_BADGE_COLORS[source] ?? SOURCE_BADGE_COLORS.webhook}`}
-    >
-      {source}
-    </span>
-  );
-}
+const URGENCY_OPTIONS = ["high", "medium", "low"] as const;
 
 function LoginForm() {
   const supabase = useMemo(() => createClient(), []);
@@ -86,51 +74,79 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-4 py-8 text-sm leading-[1.5] text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-lg border border-[#E5E7EB] bg-white p-8 shadow-sm dark:border-[#1E293B] dark:bg-[#111827]"
-      >
-        <h1 className="text-2xl font-semibold">Inbound Triage</h1>
-        <p className="mt-2 text-[#6B7280] dark:text-[#94A3B8]">
-          Sign in to review inbound messages.
-        </p>
-        <label className="mt-6 block font-medium" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-[#111827] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 dark:border-[#1E293B] dark:bg-[#0F172A] dark:text-[#E2E8F0] dark:focus:border-[#38BDF8]"
-        />
-        <label className="mt-4 block font-medium" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-[#111827] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 dark:border-[#1E293B] dark:bg-[#0F172A] dark:text-[#E2E8F0] dark:focus:border-[#38BDF8]"
-        />
-        {error && (
-          <p className="mt-4 rounded-md bg-red-50 px-4 py-2 text-red-700 dark:bg-red-950/40 dark:text-red-300">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-6 w-full rounded-md bg-[#2563EB] px-4 py-2 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#38BDF8] dark:text-[#0F172A] dark:hover:bg-sky-300"
-        >
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8 text-sm">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold">Inbound Triage</CardTitle>
+          <CardDescription>Sign in to review inbound messages.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  allLabel,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  allLabel: string;
+  options: readonly string[];
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-44 capitalize">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{allLabel}</SelectItem>
+          {options.map((item) => (
+            <SelectItem key={item} value={item} className="capitalize">
+              {item}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -157,7 +173,7 @@ export default function Home() {
           if(isMounted)setIsLoading(false);
         }
       }
-    
+
 
     loadSession();
     const { data: { subscription }} = supabase.auth.onAuthStateChange((_event, session) => {
@@ -176,7 +192,7 @@ export default function Home() {
       return;
     }
 
-    let ignore = false; // prevents a stale response from overwriting newer State 
+    let ignore = false; // prevents a stale response from overwriting newer State
 
     async function loadMessages() {
       setIsFetching(true);
@@ -187,9 +203,9 @@ export default function Home() {
       const { data, error: queryError } = await supabase
         .from("messages")
         .select("id, name, email, text, category, urgency, summary, source, created_at")
-        .order("created_at", { ascending: false }); //sort largest to smallest , newest first 
+        .order("created_at", { ascending: false }); //sort largest to smallest , newest first
 
-      if (ignore) return; 
+      if (ignore) return;
       if (queryError) setError(queryError.message);
       else setMessages((data ?? []) as Message[]);
       setIsFetching(false);
@@ -197,7 +213,7 @@ export default function Home() {
 
     loadMessages();
 
-    return () => 
+    return () =>
     { ignore = true; };
   }, [supabase, user]);
 
@@ -214,7 +230,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] text-sm text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
+      <main className="flex min-h-screen items-center justify-center bg-background text-sm">
         Loading...
       </main>
     );
@@ -225,106 +241,80 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAFAFA] text-sm leading-[1.5] text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
-      <header className="border-b border-[#E5E7EB] bg-white dark:border-[#1E293B] dark:bg-[#0F172A]">
+    <main className="min-h-screen bg-background text-sm">
+      <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
           <h1 className="text-xl font-semibold">Inbound Triage</h1>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-md border border-[#E5E7EB] px-4 py-2 font-medium hover:bg-[#F3F4F6] dark:border-[#1E293B] dark:hover:bg-[#1E293B]"
-          >
+          <Button type="button" variant="outline" onClick={handleLogout}>
             Log out
-          </button>
+          </Button>
         </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6">
           <h2 className="text-2xl font-semibold">Messages</h2>
-          <p className="mt-2 text-[#6B7280] dark:text-[#94A3B8]">
+          <p className="mt-2 text-muted-foreground">
             Review and filter classified inbound messages.
           </p>
         </div>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-          <label className="flex flex-col gap-2 font-medium">
-            Category
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-normal outline-none focus:border-[#2563EB] dark:border-[#1E293B] dark:bg-[#111827] dark:focus:border-[#38BDF8]"
-            >
-              <option value="all">All categories</option>
-              {CATEGORY_OPTIONS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-2 font-medium">
-            Urgency
-            <select
-              value={urgency}
-              onChange={(event) => setUrgency(event.target.value)}
-              className="rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-normal outline-none focus:border-[#2563EB] dark:border-[#1E293B] dark:bg-[#111827] dark:focus:border-[#38BDF8]"
-            >
-              <option value="all">All urgency</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-2 font-medium">
-            Source
-            <select
-              value={source}
-              onChange={(event) => setSource(event.target.value)}
-              className="rounded-md border border-[#E5E7EB] bg-white px-4 py-2 font-normal outline-none focus:border-[#2563EB] dark:border-[#1E293B] dark:bg-[#111827] dark:focus:border-[#38BDF8]"
-            >
-              <option value="all">All sources</option>
-              {SOURCE_OPTIONS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
+          <FilterSelect
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            allLabel="All categories"
+            options={CATEGORY_OPTIONS}
+          />
+          <FilterSelect
+            label="Urgency"
+            value={urgency}
+            onChange={setUrgency}
+            allLabel="All urgency"
+            options={URGENCY_OPTIONS}
+          />
+          <FilterSelect
+            label="Source"
+            value={source}
+            onChange={setSource}
+            allLabel="All sources"
+            options={SOURCE_OPTIONS}
+          />
+          <Button
             type="button"
+            variant="outline"
             onClick={() => {
               setCategory("all");
               setUrgency("all");
               setSource("all");
             }}
-            className="rounded-md border border-[#E5E7EB] px-4 py-2 font-medium hover:bg-[#F3F4F6] dark:border-[#1E293B] dark:hover:bg-[#1E293B]"
           >
             Clear filters
-          </button>
+          </Button>
         </div>
 
         {error && (
-          <p className="mb-6 rounded-md bg-red-50 px-4 py-2 text-red-700 dark:bg-red-950/40 dark:text-red-300">
-            {error}
-          </p>
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        <div className="overflow-x-auto rounded-lg border border-[#E5E7EB] bg-white dark:border-[#1E293B] dark:bg-[#111827]">
-          <table className="w-full min-w-[720px] text-left">
-            <thead className="border-b border-[#E5E7EB] text-xs uppercase text-[#6B7280] dark:border-[#1E293B] dark:text-[#94A3B8]">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Summary</th>
-                <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">Urgency</th>
-                <th className="px-4 py-3 font-semibold">Source</th>
-                <th className="px-4 py-3 font-semibold">Created</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="py-0">
+          <Table className="min-w-180">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Summary</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Urgency</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Created</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredMessages.map((message) => (
-                <tr
+                <TableRow
                   key={message.id}
                   tabIndex={0}
                   role="link"
@@ -335,39 +325,41 @@ export default function Home() {
                       router.push(`/messages/${message.id}`);
                     }
                   }}
-                  className="cursor-pointer border-b border-[#E5E7EB] last:border-b-0 hover:bg-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#2563EB] dark:border-[#1E293B] dark:hover:bg-[#1E293B] dark:focus:ring-[#38BDF8]"
+                  className="cursor-pointer focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-none"
                 >
-                  <td className="px-4 py-3">
+                  <TableCell>
                     <Link
                       href={`/messages/${message.id}`}
-                      className="block font-medium text-[#2563EB] hover:underline dark:text-[#38BDF8]"
+                      className="block font-medium text-primary hover:underline"
                     >
                       {message.name}
                     </Link>
-                  </td>
-                  <td className="max-w-md px-4 py-3">{message.summary}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="max-w-md whitespace-normal">
+                    {message.summary}
+                  </TableCell>
+                  <TableCell>
                     <CategoryBadge category={message.category} />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <UrgencyBadge urgency={message.urgency} />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <SourceBadge source={message.source} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[#6B7280] dark:text-[#94A3B8]">
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
                     {new Date(message.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           {filteredMessages.length === 0 && (
-            <p className="px-4 py-8 text-center text-[#6B7280] dark:text-[#94A3B8]">
+            <p className="px-4 py-8 text-center text-muted-foreground">
               No messages match the selected filters.
             </p>
           )}
-        </div>
+        </Card>
       </section>
     </main>
   );

@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { CategoryBadge, SourceBadge, UrgencyBadge } from "@/components/badges";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 type Message = {
   id: string;
@@ -15,12 +19,6 @@ type Message = {
   summary: string;
   source: string;
   created_at: string;
-};
-
-const urgencyColors = {
-  high: "bg-[#DC2626]",
-  medium: "bg-[#D97706]",
-  low: "bg-[#6B7280]",
 };
 
 function MessageDetailContent() {
@@ -65,75 +63,77 @@ function MessageDetailContent() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] text-sm text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
+      <main className="flex min-h-screen items-center justify-center bg-background text-sm">
         Loading...
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#FAFAFA] px-4 py-8 text-sm leading-[1.5] text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
+    <main className="min-h-screen bg-background px-4 py-8 text-sm">
       <div className="mx-auto max-w-3xl">
-        <Link
-          href="/"
-          className="font-medium text-[#2563EB] hover:underline dark:text-[#38BDF8]"
-        >
+        <Link href="/" className="font-medium text-primary hover:underline">
           Back to messages
         </Link>
         {error ? (
-          <p className="mt-6 rounded-md bg-red-50 px-4 py-2 text-red-700 dark:bg-red-950/40 dark:text-red-300">
-            {error}
-          </p>
+          <Alert variant="destructive" className="mt-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : message ? (
-          <article className="mt-6 rounded-lg border border-[#E5E7EB] bg-white p-8 dark:border-[#1E293B] dark:bg-[#111827]">
-            <div className="flex flex-col gap-4 border-b border-[#E5E7EB] pb-6 dark:border-[#1E293B] sm:flex-row sm:items-start sm:justify-between">
+          <Card className="mt-6">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold">{message.name}</h1>
-                <p className="mt-2 text-[#6B7280] dark:text-[#94A3B8]">
-                  {message.email}
-                </p>
+                <CardTitle className="text-2xl font-semibold">
+                  {message.name}
+                </CardTitle>
+                <p className="mt-2 text-muted-foreground">{message.email}</p>
               </div>
-              <span
-                className={`inline-flex w-fit rounded-full px-2 py-1 text-xs font-semibold capitalize text-white ${urgencyColors[message.urgency]}`}
-              >
-                {message.urgency}
-              </span>
-            </div>
-            <dl className="grid gap-4 border-b border-[#E5E7EB] py-6 sm:grid-cols-2 dark:border-[#1E293B]">
-              <div>
-                <dt className="text-xs uppercase text-[#6B7280] dark:text-[#94A3B8]">
-                  Category
-                </dt>
-                <dd className="mt-2 capitalize">{message.category}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase text-[#6B7280] dark:text-[#94A3B8]">
-                  Source
-                </dt>
-                <dd className="mt-2 capitalize">{message.source}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase text-[#6B7280] dark:text-[#94A3B8]">
-                  Created
-                </dt>
-                <dd className="mt-2">
-                  {new Date(message.created_at).toLocaleString()}
-                </dd>
-              </div>
-            </dl>
-            <section className="border-b border-[#E5E7EB] py-6 dark:border-[#1E293B]">
-              <h2 className="text-xs font-semibold uppercase text-[#6B7280] dark:text-[#94A3B8]">
-                Summary
-              </h2>
-              <p className="mt-2">{message.summary}</p>
-            </section>
-            <section className="pt-6">
-              <h2 className="text-xs font-semibold uppercase text-[#6B7280] dark:text-[#94A3B8]">
-                Full message
-              </h2>
-              <p className="mt-2 whitespace-pre-wrap">{message.text}</p>
-            </section>
-          </article>
+              <UrgencyBadge urgency={message.urgency} />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <Separator />
+              <dl className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase text-muted-foreground">
+                    Category
+                  </dt>
+                  <dd className="mt-2">
+                    <CategoryBadge category={message.category} />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-muted-foreground">
+                    Source
+                  </dt>
+                  <dd className="mt-2">
+                    <SourceBadge source={message.source} />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-muted-foreground">
+                    Created
+                  </dt>
+                  <dd className="mt-2">
+                    {new Date(message.created_at).toLocaleString()}
+                  </dd>
+                </div>
+              </dl>
+              <Separator />
+              <section>
+                <h2 className="text-xs font-semibold uppercase text-muted-foreground">
+                  Summary
+                </h2>
+                <p className="mt-2">{message.summary}</p>
+              </section>
+              <Separator />
+              <section>
+                <h2 className="text-xs font-semibold uppercase text-muted-foreground">
+                  Full message
+                </h2>
+                <p className="mt-2 whitespace-pre-wrap">{message.text}</p>
+              </section>
+            </CardContent>
+          </Card>
         ) : null}
       </div>
     </main>
@@ -144,7 +144,7 @@ export default function MessageDetailPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] text-sm text-[#111827] dark:bg-[#0F172A] dark:text-[#E2E8F0]">
+        <main className="flex min-h-screen items-center justify-center bg-background text-sm">
           Loading...
         </main>
       }

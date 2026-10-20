@@ -13,6 +13,12 @@ export const SOURCE_BADGE_COLORS: Record<string, string> = {
   gmail: "bg-[#B91C1C]",
 };
 
+export const URGENCY_BADGE_COLORS: Record<string, string> = {
+  high: "bg-[#DC2626]",
+  medium: "bg-[#D97706]",
+  low: "bg-[#6B7280]",
+};
+
 export const CATEGORY_BADGE_COLORS: Record<string, string> = {
   billing: "bg-[#2563EB]",
   technical: "bg-[#7C3AED]",
